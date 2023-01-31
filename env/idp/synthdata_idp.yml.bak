@@ -1,0 +1,8 @@
+name: synthdata_intel
+channels:
+  - conda-forge
+  - intel
+dependencies:
+  - intelpython3_full=2023.0
+  - pip:
+    - tqdm
