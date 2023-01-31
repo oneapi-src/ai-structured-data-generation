@@ -1,0 +1,14 @@
+name: synthdata_stock
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10.8
+  - pip=22.2.2
+  - pip:
+    - git+https://github.com/TimeSynth/TimeSynth.git  
+    - numpy==1.22.3
+    - scipy==1.7.3
+    - pandas==1.5.1
+    - matplotlib
+    - tqdm
