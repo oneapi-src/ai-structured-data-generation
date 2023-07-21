@@ -6,7 +6,7 @@ on: [push]
 jobs:
   bandit:
     name: Bandit
-    runs-on: self-hosted onecloud
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
       - name: Scan
