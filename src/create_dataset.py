@@ -4,6 +4,22 @@
 '''
 This code has the functions for generating synthetic data specific to an industry or custom config
 '''
+
+import argparse
+import logging
+import pathlib
+import warnings
+import json
+import secrets
+import time
+import string
+import sys
+import numpy as np
+from scipy import stats  # pylint: disable=E0401
+from generator import add_numeric_column, add_categorical_column, add_timeseries_column
+from generator import add_seasonality, add_noise, add_anomalies
+
+
 def generate_UID(num_rows, id_length):
     symbols = {}
     letters = string.ascii_uppercase + string.digits
@@ -14,7 +30,7 @@ def generate_UID(num_rows, id_length):
         symbols[sym] = 1
     return symbols
 
-def custom_dataset(conf, dataset_length):  # pylint: disable=W0102
+def custom_dataset(conf, dataset_length, data_dir):  # pylint: disable=W0102
     np_time = 0
     sp_time = 0
     custom_df = pd.DataFrame()
@@ -64,11 +80,11 @@ def custom_dataset(conf, dataset_length):  # pylint: disable=W0102
 
     for col in custom_df.columns:
         logger.info("Created column %s of size %d", col, len(custom_df[col]))
-    filename = ".//data//custom_data_" + str(num_rows) + ".csv"
+    filename = data_dir + "/custom_data_" + str(num_rows) + ".csv"
     custom_df.to_csv(filename, index=False)
     return sp_time, np_time
 
-def fin_CAR_dataset(dataset_length, time_length, conf):
+def fin_CAR_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
     np_time = 0
     pd_time = 0
@@ -112,11 +128,11 @@ def fin_CAR_dataset(dataset_length, time_length, conf):
     add_categorical_column(fin_df, dataset_length, "Start_prices", params["starts"])
     np_time += add_timeseries_column(fin_df, dataset_length, time_length, "CAR", params)
 
-    filename = ".//data//financial_data_" + data_context + '_' + str(dataset_length) + ".csv"
+    filename = data_dir + "/financial_data_" + data_context + '_' + str(dataset_length) + ".csv"
     fin_df.to_csv(filename, index=False)
     return sp_time, np_time, pd_time
 
-def health_MG_dataset(dataset_length, time_length, conf):
+def health_MG_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
     np_time = 0
     pd_time = 0
@@ -160,12 +176,12 @@ def health_MG_dataset(dataset_length, time_length, conf):
     health_df["Timeseries"] = health_df["Timeseries"].apply(func=my_noise)
     pd_time += time.time() - start
 
-    filename = ".//data//healthcare_data_" + data_context + '_' + str(dataset_length) + ".csv"
+    filename = data_dir + "/healthcare_data_" + data_context + '_' + str(dataset_length) + ".csv"
     health_df.to_csv(filename, index=False)
 
     return sp_time, np_time, pd_time
 
-def electrical_SIN_dataset(dataset_length, time_length, conf):
+def electrical_SIN_dataset(dataset_length, time_length, conf, data_dir):
     global sp_time  # pylint: disable=W0603
     sp_time = 0
     np_time = 0
@@ -232,12 +248,12 @@ def electrical_SIN_dataset(dataset_length, time_length, conf):
         return x["Timeseries"] + p_small + n_small
     electric_df["Timeseries"] = electric_df.apply(my_anomalies, axis=1)
     
-    filename = ".//data//utilities_data_" + data_context + '_' + str(dataset_length) + ".csv"
+    filename = data_dir + "/utilities_data_" + data_context + '_' + str(dataset_length) + ".csv"
     electric_df.to_csv(filename, index=False)
     
     return sp_time, np_time, pd_time
 
-def ecommerce_dataset(dataset_length, time_length, conf):
+def ecommerce_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
     np_time = 0
     pd_time = 0
@@ -299,12 +315,12 @@ def ecommerce_dataset(dataset_length, time_length, conf):
         ecom_df["Subscribers_Timeseries"] = ecom_df["Subscribers_Timeseries"].apply(func=my_season)
         pd_time += time.time() - start
 
-    filename = ".//data//ecomm_data_" + sector + '_' + str(dataset_length) + ".csv"
+    filename = data_dir + "/ecomm_data_" + sector + '_' + str(dataset_length) + ".csv"
     ecom_df.to_csv(filename, index=False)
 
     return sp_time, np_time, pd_time
 
-def env_PSUEDO_dataset(dataset_length, time_length, conf):
+def env_PSUEDO_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
     np_time = 0
     pd_time = 0
@@ -355,32 +371,19 @@ def env_PSUEDO_dataset(dataset_length, time_length, conf):
     env_df["Timeseries"] = env_df["Timeseries"].apply(func=my_noise)
     pd_time += time.time() - start
 
-    filename = ".//data//env_data_" + region + '_' + data_context + '_' + str(dataset_length) + ".csv"
+    filename = data_dir + "/env_data_" + region + '_' + data_context + '_' + str(dataset_length) + ".csv"
     env_df.to_csv(filename, index=False)
 
     return sp_time, np_time, pd_time
 
 if __name__ == "__main__":
-    import argparse
-    import logging
-    import pathlib
-    import warnings
-    import json
-    import secrets
-    import time
-    import string
-    import numpy as np
-    from scipy import stats  # pylint: disable=E0401
-    from generator import add_numeric_column, add_categorical_column, add_timeseries_column
-    from generator import add_seasonality, add_noise, add_anomalies
-
     parser = argparse.ArgumentParser()
     warnings.filterwarnings("ignore")
 
     parser.add_argument('--industry',
                         type=str,
                         default="",
-                        help="pick a preset indsutry for which to generate synthetic data: \
+                        help="pick a preset industry for which to generate synthetic data: \
                         finance, healthcare, utilities, e-commerce, environmental, custom")
     parser.add_argument('-l',
                         '--logfile',
@@ -395,13 +398,19 @@ if __name__ == "__main__":
                         '--time_duration',
                         default=1000,
                         help="integer value for length of unit-less time")
-    parser.add_argument('--intel',
-                        default=False,
-                        action="store_true",
-                        help="use intel accelerated technologies")
+    parser.add_argument('-c',
+                        '--config_file',
+                        required=True,
+                        type=str,
+                        default="",
+                        help="configuration file path")
+    parser.add_argument('-d',
+                        '--data_dir',
+                        required=True,
+                        type=str,
+                        help="directory to save generated data")
     
     FLAGS = parser.parse_args()
-    INTEL_FLAG = FLAGS.intel
     data_len = int(FLAGS.dataset_len)
     time_len = int(FLAGS.time_duration)
     industry = FLAGS.industry.lower()
@@ -409,57 +418,60 @@ if __name__ == "__main__":
     np_time = 0
     pd_time = 0
 
-    if INTEL_FLAG:
-        import modin.config as cfg  # pylint: disable=E0401
-        cfg.Engine.put('ray')
-        import modin.pandas as pd  # pylint: disable=E0401
-        import ray  # pylint: disable=E0401
-        ray.init()
-        RAY_DISABLE_MEMORY_MONITOR = 1
-    else:
-        import pandas as pd
+    import modin.config as cfg  # pylint: disable=E0401
+    cfg.Engine.put('ray')
+    import modin.pandas as pd  # pylint: disable=E0401
+    import ray  # pylint: disable=E0401
 
     if FLAGS.logfile == "":
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.INFO)
     else:
         path = pathlib.Path(FLAGS.logfile)
         path.parent.mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(filename=FLAGS.logfile, level=logging.DEBUG, filemode='w')
+        logging.basicConfig(filename=FLAGS.logfile, level=logging.INFO, filemode='w')
     logger = logging.getLogger()
     logging.getLogger('modin').setLevel(logging.WARNING)
 
-    with open("src/myconfig.json", "r") as jsonfile:  # pylint: disable=W1514
-        data = json.load(jsonfile)
+    ray.init()
+    RAY_DISABLE_MEMORY_MONITOR = 1
 
+    if FLAGS.config_file != "":
+        with open(FLAGS.config_file, "r") as jsonfile:  # pylint: disable=W1514
+            data = json.load(jsonfile)
+    else:
+        sys.exit("config file path is missing")
+    
+    if FLAGS.data_dir == "":
+        sys.exit("Data dir path is missing")
+    
     print("Data generation can take a while depending on the size expected and level of customization. Please wait until the data generation is complete...")
 
     if industry == "":
-        logger.info("no specifications provided, please run script with a configuration or preset industry")
+        sys.exit("No specifications provided, please run script with a configuration or preset industry")
     
     elif industry == "custom":
-        sp_time, np_time = custom_dataset(data["Custom"], data_len)
+        sp_time, np_time = custom_dataset(data["Custom"], data_len, FLAGS.data_dir)
 
     elif industry == "finance":
-        sp_time, np_time, pd_time = fin_CAR_dataset(data_len, time_len, data["Finance"])
+        sp_time, np_time, pd_time = fin_CAR_dataset(data_len, time_len, data["Finance"], FLAGS.data_dir)
 
     elif industry == "healthcare":
-        sp_time, np_time, pd_time = health_MG_dataset(data_len, time_len, data["Healthcare"])
+        sp_time, np_time, pd_time = health_MG_dataset(data_len, time_len, data["Healthcare"], FLAGS.data_dir)
 
     elif industry == "utilities":
-        sp_time, np_time, pd_time = electrical_SIN_dataset(data_len, time_len, data["Utilities"])
+        sp_time, np_time, pd_time = electrical_SIN_dataset(data_len, time_len, data["Utilities"], FLAGS.data_dir)
 
     elif industry == "ecommerce" or industry == "e-commerce":  # pylint: disable=R1714
-        sp_time, np_time, pd_time = ecommerce_dataset(data_len, time_len, data["E-commerce"])
+        sp_time, np_time, pd_time = ecommerce_dataset(data_len, time_len, data["E-commerce"], FLAGS.data_dir)
 
     elif industry == "environmental":
-        sp_time, np_time, pd_time = env_PSUEDO_dataset(data_len, time_len, data["Environmental"])
+        sp_time, np_time, pd_time = env_PSUEDO_dataset(data_len, time_len, data["Environmental"], FLAGS.data_dir)
     else:
-        logger.info("industry not found in implementation, ")
+        sys.exit("Industry not found in implementation, please check --industry parameter")
+    
     if sp_time > 0:
         logger.info("Scipy time to generate data for %s industry: %f secs", industry, sp_time)
     if np_time > 0:
         logger.info("Numpy time to generate data for %s industry: %f secs", industry, np_time)
-    if pd_time > 0 and INTEL_FLAG:
+    if pd_time > 0:
         logger.info("Modin time to generate data for %s industry: %f secs", industry, pd_time)
-    elif pd_time > 0:
-        logger.info("Pandas time to generate data for %s industry: %f secs", industry, pd_time)

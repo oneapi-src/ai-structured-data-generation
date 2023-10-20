@@ -1,0 +1,55 @@
+{
+    "Finance":{
+        "Economy_health": "recession",
+        "Init_values":[50, 400],
+        "Sectors":[
+            "Energy", "Materials", "Industrials", "Utilities", "Consumer Discretionary", "Information Technology", "Consumer Staples", "Real Estate", "Healthcare", "Communication Services", "Finance"],
+        "Sub-context": "stocks",
+        "Distribution":"random"
+    },
+    "Healthcare":{
+        "Equilibrium_value": 3,
+        "Distribution":"normal",
+        "Sub-context": "blood_cell_density"
+    },
+    "Utilities":{
+        "Distribution":"skewed",
+        "Sub-context": "electrical_transmission_lines"
+    },
+    "E-commerce":{
+        "Init_values": [100, 300],
+        "Financial_condition":"growing",
+        "Categories": ["Sales", "Subscribers", "Revenue"],
+        "Sector": "fashion",
+        "Distribution": "normal"
+    },
+    "Environmental":{
+        "Sub-context": "monthly_rainfall",
+        "Trend": "negative",
+        "Init_values": [200, 600],
+        "Distribution": "normal",
+        "Region": "Indonesia"
+    },
+    "Custom":{
+        "Number_of_rows": 100,
+        "Numeric_columns": 5,
+        "Numeric_distributions": {"1": "normal", "2": "random", "3": "range", "4": "binomial", "5": "uniform"}, 
+        "Numeric_init_vals": {"1": [5, 15], "2": [30, 50], "3": [], "4": [0, 1, 0.9, 0.1], "5": [0, 10]}, 
+        "Categorical_columns": 3,
+        "Cat_col_types": {"1": "list", "2": "list", "3": "UID"}, 
+        "Cat_col_vals": { 
+            "1": {"values": ["red", "orange", "green"], "probabilities": [0.1, 0.23, 0.67]}, 
+            "2": {"values": ["onshore", "offshore"], "probabilities": [0.8, 0.2]}, 
+            "3": {"length": 4}}, 
+        "Timeseries_columns": 2,
+        "Time_duration": 1000,
+        "Time_col_types": {"1": "CAR", "2": "NARMA"},
+        "Time_col_params": {"1": {"sigma": 15, "starts": [100,200]}, "2": {}},
+        "Target_columns": 3,
+        "Target_col_types": {"1": "binary", "2": "multi-class", "3": "regression"}, 
+        "Target_col_classes": { 
+            "1": {"values": [0,1], "weights": [0.95, 0.05]},
+            "2": {"values": ["new", "in progress", "completed"], "weights": []},
+            "3": {"values": [30, 60], "dist": "normal"}} 
+    }
+}

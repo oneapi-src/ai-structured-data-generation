@@ -4,6 +4,22 @@
 '''
 This code has the functions for basic data analysis given a generated dataset.
 '''
+
+import argparse
+import logging
+import pathlib
+import warnings
+import time
+import sys
+import numpy as np
+import os
+from scipy import stats  # pylint: disable=E0401
+from scipy import optimize  # pylint: disable=E0401
+import matplotlib.pyplot as plt  # pylint: disable=E0401
+import matplotlib.backends.backend_pdf  # pylint: disable=E0401
+from tqdm import tqdm
+
+
 def find_skewness(data):
     return stats.skew(data), stats.kurtosis(data, fisher=True)
 
@@ -20,19 +36,19 @@ def find_trend(time_samples, signal):
     
     return popt, time.time() - start_time
 
-def plot_mean(x, data_type, dataset_size):
+def plot_mean(x, data_type, output_dir):
     plt.figure(figsize=(10, 5))
     plt.hist(x)
     plt.xlabel("Means of Individual Signals")
     plt.ylabel("Count")
-    plt.savefig(data_type + "_Signal_Mean.png")
+    plt.savefig(os.path.join(output_dir, data_type + "_Signal_Mean.png"))
 
-def plot_var(x, data_type, dataset_size):
+def plot_var(x, data_type, output_dir):
     plt.figure(figsize=(10, 5))
     plt.hist(x)
     plt.xlabel("Variances of Individual Signals")
     plt.ylabel("Count")
-    plt.savefig(data_type + "_Signal_Var.png")
+    plt.savefig(os.path.join(output_dir, data_type + "_Signal_Var.png"))
 
 def exploratory_stats(sig_arr):
     results = {}
@@ -50,20 +66,8 @@ def exploratory_stats(sig_arr):
 
     return results, norm_sig
 
-if __name__ == "__main__":
-    import argparse
-    import logging
-    import pathlib
-    import warnings
-    import time
-    import sys
-    import numpy as np
-    from scipy import stats  # pylint: disable=E0401
-    from scipy import optimize  # pylint: disable=E0401
-    import matplotlib.pyplot as plt  # pylint: disable=E0401
-    import matplotlib.backends.backend_pdf  # pylint: disable=E0401
-    from tqdm import tqdm
 
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     warnings.filterwarnings("ignore")
 
@@ -72,34 +76,28 @@ if __name__ == "__main__":
                         type=str,
                         default="",
                         help="log file to output benchmarking results to")
-    parser.add_argument('-i',
-                        '--intel',
-                        default=False,
-                        action="store_true",
-                        help="use intel accelerated technologies")
     parser.add_argument('-d',
                         '--data',
                         type=str,
                         default="",
                         help="data csv file to analyze")
+    parser.add_argument('-o',
+                        '--output_dir',
+                        type=str,
+                        required=True,
+                        help="directory to output analysis result")
 
     FLAGS = parser.parse_args()
-    INTEL_FLAG = FLAGS.intel
     data_file = FLAGS.data
 
     sp_time = 0
     np_time = 0
     pd_time = 0
 
-    if INTEL_FLAG:
-        import modin.config as cfg  # pylint: disable=E0401
-        cfg.Engine.put('ray')
-        import modin.pandas as pd  # pylint: disable=E0401
-        import ray  # pylint: disable=E0401
-        ray.init()
-        RAY_DISABLE_MEMORY_MONITOR = 1
-    else:
-        import pandas as pd
+    import modin.config as cfg  # pylint: disable=E0401
+    cfg.Engine.put('ray')
+    import modin.pandas as pd  # pylint: disable=E0401
+    import ray  # pylint: disable=E0401
 
     if FLAGS.logfile == "":
         logging.basicConfig(level=logging.DEBUG)
@@ -112,6 +110,9 @@ if __name__ == "__main__":
     logging.getLogger('matplotlib').setLevel(logging.WARNING)
     logging.getLogger('modin').setLevel(logging.WARNING)
     logging.getLogger('PIL.PngImagePlugin').setLevel(logging.WARNING)
+
+    ray.init()
+    RAY_DISABLE_MEMORY_MONITOR = 1
 
     if data_file == "":
         logger.info("no data provided, please run script again with the data's location")
@@ -126,14 +127,11 @@ if __name__ == "__main__":
     data = pd.read_csv(data_file, index_col=False)
     pd_time += time.time() - start_time
 
-    if INTEL_FLAG:
-        logger.info("Modin time for read csv: %f", pd_time)
-        start_time = time.time()
-        import pandas as pd
-        data = data._to_pandas()  # pylint: disable=W0212
-        logger.info("converting modin to pandas: %f", time.time() - start_time)
-    else:
-        logger.info("Pandas time for read csv: %f", pd_time)
+    logger.info("Modin time for read csv: %f", pd_time)
+    start_time = time.time()
+    import pandas as pd
+    data = data._to_pandas()  # pylint: disable=W0212
+    logger.info("converting modin to pandas: %f", time.time() - start_time)
 
     ts_cols = []
     tab_cols = []
@@ -143,7 +141,7 @@ if __name__ == "__main__":
         elif "id" not in col.lower() and str(data[col][0]).isdigit():
             tab_cols.append(col)
     
-    print("Running Data Analysis for Time Series Columns")
+    print("Running Data Analysis for Time-Series Columns")
     for col in tqdm(ts_cols):
         num_sigs = len(data[col])
         start_time = time.time()
@@ -156,10 +154,10 @@ if __name__ == "__main__":
         logger.info("Executed normalization of %s data", col)
         logger.info("Exploratory analysis and normalization for %s data using numpy took %f secs", col, npt)
 
-        plot_mean(explore["Means"], col, num_sigs)
-        plot_var(explore["Variances"], col, num_sigs)
+        plot_mean(explore["Means"], col, FLAGS.output_dir)
+        plot_var(explore["Variances"], col, FLAGS.output_dir)
 
-        pdf = matplotlib.backends.backend_pdf.PdfPages(col+"_trends.pdf")
+        pdf = matplotlib.backends.backend_pdf.PdfPages(os.path.join(FLAGS.output_dir, col+"_trends.pdf"))
         num_points = len(sigs[0])
         x = np.linspace(0, num_points, num_points)
         y_funs = {}

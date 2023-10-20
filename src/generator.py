@@ -76,7 +76,7 @@ def add_categorical_column(df, length, label, values, options=None, weights=None
 
 
 def add_timeseries_column(df, dataset_length, time_length, sig_type, params, label="Timeseries"):
-    print("adding time series column")
+    print("adding time-series column")
     np_time = 0
     if sig_type == "CAR":
         sig_dict = {}
@@ -194,7 +194,7 @@ def add_timeseries_column(df, dataset_length, time_length, sig_type, params, lab
             sig_dict[str(i)], npt = gen_pseudoperiodic_signal(time_length, mparams)
             np_time += npt
         df[label] = list(sig_dict.values())
-    print("adding time series column - Done\n")
+    print("adding time-series column - Done\n")
     return np_time
 
 def add_seasonality(og_sig, length, freq, mean):
