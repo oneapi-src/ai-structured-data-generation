@@ -1,4 +1,4 @@
-# Generating Structured Synthetic Data: Numeric, Categorical, and Time-Series Tabular Data
+# AI Structured Data Generation
 
 ## Introduction
 Synthetic data in the Artificial Intelligence (AI) field is becoming increasingly popular across different industries. This is because procuring real data for development is not always readily available and having synthetic data opens up a lot more opportunities for AI development. Python*, with its myriad features supporting data and statistical analyses, can also be used for synthetic data generation.
