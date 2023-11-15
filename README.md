@@ -93,7 +93,7 @@ mkdir -p $WORKSPACE && cd $WORKSPACE
 ```
 
 ```bash
-git clone https://github.com/intel-innersource/frameworks.ai.platform.sample-apps.ai-structured-data-generation.git $WORKSPACE
+git clone https://github.com/oneapi-src/ai-structured-data-generation.git $WORKSPACE
 ```
 ### Set Up Conda
 To learn more, please visit [install anaconda on Linux](https://docs.anaconda.com/free/anaconda/install/linux/).
