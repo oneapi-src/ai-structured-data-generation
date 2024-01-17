@@ -3,10 +3,11 @@ channels:
   - intel
   - conda-forge
 dependencies:
-  - intelpython3_core=2023.2.0=py39_0
-  - modin-ray=0.23.0
-  - matplotlib=3.7.2
-  - tqdm=4.65.0
-  - pip=23.1.2
+  - python=3.10
+  - intelpython3_core=2024.0.0
+  - modin-ray=0.24.1
+  - matplotlib=3.8.2
+  - tqdm=4.66.1
+  - pip=23.3.1
   - pip:
-    - git+https://github.com/TimeSynth/TimeSynth.git
+    - git+https://github.com/TimeSynth/TimeSynth.git@e50cdb9015d415adf46a4eae161a087c5c378564

@@ -115,13 +115,13 @@ The [$WORKSPACE/env/intel_env.yml](./env/intel_env.yml) file contains all depend
 
 | **Packages required in YAML file**| **Version**
 | :---                              | :--
-| python                            | 3.9
-| intelpython3_core                 | 2023.2.0
-| modin-ray                         | 0.23.0
-| matplotlib                        | 3.7.2 
-| tqdm                              | 4.65.0
-| pip                               | 23.1.2
-| timesynth                         | 0.2.4
+| python                            | 3.10
+| intelpython3_core                 | 2024.0.0
+| modin-ray                         | 0.24.1
+| matplotlib                        | 3.8.2
+| tqdm                              | 4.66.1
+| pip                               | 23.3.1
+| timesynth                         | [e50cdb9](https://github.com/TimeSynth/TimeSynth/commit/e50cdb9015d415adf46a4eae161a087c5c378564)
 
  Execute next command to create the conda environment.
 
@@ -253,7 +253,7 @@ python $WORKSPACE/src/analysis.py -l $OUTPUT_DIR/logs/utilities_modin_analysis.l
 The log file name can be changed to describe the run.
 
 #### Clean Up Bare Metal
-Follow these steps to restore your ``$WORKSPACE`` directory to an initial step. Please note that all downloaded dataset files, conda environment, and logs created by workflow will be deleted. Before executing next steps back up your important files.
+Follow these steps to restore your ``$WORKSPACE`` directory to an initial step. Please note that all downloaded dataset files, conda environment, and logs created by the workflow will be deleted. Before executing next steps back up your important files.
 
 ```bash
 # activate base environment
@@ -262,7 +262,6 @@ conda activate base
 conda env remove -n synthetic_data_intel
 ```
 
-[//]: # (capture: baremetal)
 ```bash
 # delete all synthetic data and plots generated
 rm $DATA_DIR/*.csv $DATA_DIR/*.png $DATA_DIR/*.pdf
