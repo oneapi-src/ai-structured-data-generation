@@ -1,9 +1,9 @@
-# Copyright (C) 2023 Intel Corporation
+# Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-'''
+"""
 This code has the functions for generating synthetic data specific to an industry or custom config
-'''
+"""
 
 import argparse
 import logging
@@ -24,11 +24,12 @@ def generate_UID(num_rows, id_length):
     symbols = {}
     letters = string.ascii_uppercase + string.digits
     for j in range(num_rows):  # pylint: disable=W0612
-        sym = ''.join(secrets.choice(letters) for n in range(id_length))
+        sym = "".join(secrets.choice(letters) for n in range(id_length))
         while sym in symbols:
-            sym = ''.join(secrets.choice(letters) for n in range(id_length))
+            sym = "".join(secrets.choice(letters) for n in range(id_length))
         symbols[sym] = 1
     return symbols
+
 
 def custom_dataset(conf, dataset_length, data_dir):  # pylint: disable=W0102
     np_time = 0
@@ -42,7 +43,13 @@ def custom_dataset(conf, dataset_length, data_dir):  # pylint: disable=W0102
     numeric_dists = conf["Numeric_distributions"]
     numeric_vals = conf["Numeric_init_vals"]
     for i in range(1, numeric_cols + 1):
-        sp_time += add_numeric_column(custom_df, num_rows, "Num_col_" + str(i), numeric_dists[str(i)].lower(), numeric_vals[str(i)])
+        sp_time += add_numeric_column(
+            custom_df,
+            num_rows,
+            "Num_col_" + str(i),
+            numeric_dists[str(i)].lower(),
+            numeric_vals[str(i)],
+        )
 
     cat_cols = conf["Categorical_columns"]
     cat_types = conf["Cat_col_types"]
@@ -50,39 +57,81 @@ def custom_dataset(conf, dataset_length, data_dir):  # pylint: disable=W0102
     for i in range(1, cat_cols + 1):
         if cat_types[str(i)] == "list":
             if len(cat_vals[str(i)]["probabilities"]) == 0:
-                add_categorical_column(custom_df, num_rows, "Cat_col_" + str(i), [], cat_vals[str(i)]["values"], None)                
+                add_categorical_column(
+                    custom_df,
+                    num_rows,
+                    "Cat_col_" + str(i),
+                    [],
+                    cat_vals[str(i)]["values"],
+                    None,
+                )
             elif sum(cat_vals[str(i)]["probabilities"]) != 1:
-                logger.info("Probabilities of categorical column must add up to 1 for categorical column #%d", i)
+                logger.info(
+                    "Probabilities of categorical column must add up to 1 for categorical column #%d",
+                    i,
+                )
             else:
-                add_categorical_column(custom_df, num_rows, "Cat_col_" + str(i), [], cat_vals[str(i)]["values"], cat_vals[str(i)]["probabilities"])
+                add_categorical_column(
+                    custom_df,
+                    num_rows,
+                    "Cat_col_" + str(i),
+                    [],
+                    cat_vals[str(i)]["values"],
+                    cat_vals[str(i)]["probabilities"],
+                )
         elif cat_types[str(i)] == "UID":
             symbols = generate_UID(num_rows, cat_vals[str(i)]["length"])
-            add_categorical_column(custom_df, num_rows, "Cat_col_" + str(i), symbols.keys())
+            add_categorical_column(
+                custom_df, num_rows, "Cat_col_" + str(i), symbols.keys()
+            )
 
     time_cols = conf["Timeseries_columns"]
     time_dur = conf["Time_duration"]
     time_types = conf["Time_col_types"]
     time_params = conf["Time_col_params"]
     for i in range(1, time_cols + 1):
-        np_time += add_timeseries_column(custom_df, num_rows, time_dur, time_types[str(i)].upper(), time_params[str(i)], "Timeseries_col_" + str(i))
-    
+        np_time += add_timeseries_column(
+            custom_df,
+            num_rows,
+            time_dur,
+            time_types[str(i)].upper(),
+            time_params[str(i)],
+            "Timeseries_col_" + str(i),
+        )
+
     target_cols = conf["Target_columns"]
     target_types = conf["Target_col_types"]
     target_class = conf["Target_col_classes"]
     for i in range(1, target_cols + 1):
         if target_types[str(i)] == "binary":
             vals = target_class[str(i)]["values"] + target_class[str(i)]["weights"]
-            sp_time += add_numeric_column(custom_df, num_rows, "Target_" + str(i), "binomial", vals)
+            sp_time += add_numeric_column(
+                custom_df, num_rows, "Target_" + str(i), "binomial", vals
+            )
         elif target_types[str(i)] == "multi-class":
-            add_categorical_column(custom_df, num_rows, "Target_" + str(i), [], target_class[str(i)]["values"], target_class[str(i)]["weights"])
+            add_categorical_column(
+                custom_df,
+                num_rows,
+                "Target_" + str(i),
+                [],
+                target_class[str(i)]["values"],
+                target_class[str(i)]["weights"],
+            )
         else:
-            sp_time += add_numeric_column(custom_df, num_rows, "Target_" + str(i), target_class[str(i)]["dist"], target_class[str(i)]["values"])
+            sp_time += add_numeric_column(
+                custom_df,
+                num_rows,
+                "Target_" + str(i),
+                target_class[str(i)]["dist"],
+                target_class[str(i)]["values"],
+            )
 
     for col in custom_df.columns:
         logger.info("Created column %s of size %d", col, len(custom_df[col]))
     filename = data_dir + "/custom_data_" + str(num_rows) + ".csv"
     custom_df.to_csv(filename, index=False)
     return sp_time, np_time
+
 
 def fin_CAR_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
@@ -110,7 +159,10 @@ def fin_CAR_dataset(dataset_length, time_length, conf, data_dir):
     params["sector_options"] = {}
     for sec in sectors:
         params["sector_options"][sec] = secrets.choice(growths)
-    params["sectors"] = [secrets.choice(list(params["sector_options"].keys())) for i in range(dataset_length)]
+    params["sectors"] = [
+        secrets.choice(list(params["sector_options"].keys()))
+        for i in range(dataset_length)
+    ]
     add_categorical_column(fin_df, dataset_length, "Sectors", params["sectors"])
 
     symbols = generate_UID(dataset_length, 4)
@@ -119,18 +171,28 @@ def fin_CAR_dataset(dataset_length, time_length, conf, data_dir):
     start, end = start_range
     if dist == "normal":
         start = time.time()
-        params["starts"] = stats.norm.rvs((start+end)//2, abs(end-start)//6, dataset_length)
+        params["starts"] = stats.norm.rvs(
+            (start + end) // 2, abs(end - start) // 6, dataset_length
+        )
         sp_time += time.time() - start
     else:
         params["starts"] = []
         for i in range(dataset_length):
-            params["starts"].append(secrets.choice(range(start, end+1)))
+            params["starts"].append(secrets.choice(range(start, end + 1)))
     add_categorical_column(fin_df, dataset_length, "Start_prices", params["starts"])
     np_time += add_timeseries_column(fin_df, dataset_length, time_length, "CAR", params)
 
-    filename = data_dir + "/financial_data_" + data_context + '_' + str(dataset_length) + ".csv"
+    filename = (
+        data_dir
+        + "/financial_data_"
+        + data_context
+        + "_"
+        + str(dataset_length)
+        + ".csv"
+    )
     fin_df.to_csv(filename, index=False)
     return sp_time, np_time, pd_time
+
 
 def health_MG_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
@@ -168,18 +230,29 @@ def health_MG_dataset(dataset_length, time_length, conf, data_dir):
         else:
             target.append("stable")
     add_categorical_column(health_df, dataset_length, "Target", target)
-    np_time += add_timeseries_column(health_df, dataset_length, time_length, "MG", params)
+    np_time += add_timeseries_column(
+        health_df, dataset_length, time_length, "MG", params
+    )
 
     def my_noise(x):
         return add_noise(time_length, x, white=True, wparams={"std": 0.1})
+
     start = time.time()
     health_df["Timeseries"] = health_df["Timeseries"].apply(func=my_noise)
     pd_time += time.time() - start
 
-    filename = data_dir + "/healthcare_data_" + data_context + '_' + str(dataset_length) + ".csv"
+    filename = (
+        data_dir
+        + "/healthcare_data_"
+        + data_context
+        + "_"
+        + str(dataset_length)
+        + ".csv"
+    )
     health_df.to_csv(filename, index=False)
 
     return sp_time, np_time, pd_time
+
 
 def electrical_SIN_dataset(dataset_length, time_length, conf, data_dir):
     global sp_time  # pylint: disable=W0603
@@ -198,20 +271,22 @@ def electrical_SIN_dataset(dataset_length, time_length, conf, data_dir):
     params["ftype"] = []
 
     def neg_sin(x):
-        return np.sin(x) + (np.sin(4*x))/5 + (np.sin(2*x))/5 + (np.sin(5*x))/4
+        return (
+            np.sin(x) + (np.sin(4 * x)) / 5 + (np.sin(2 * x)) / 5 + (np.sin(5 * x)) / 4
+        )
 
     def pos_sin(x):
-        return np.sin(x) + np.sin(2*np.pi*x)/8
+        return np.sin(x) + np.sin(2 * np.pi * x) / 8
 
     start = time.time()
     n_func = np.frompyfunc(neg_sin, 1, 1)
     p_func = np.frompyfunc(pos_sin, 1, 1)
     np_time += time.time() - start
     if dist == "skewed":
-        negative_count = (dataset_length//16)*15
+        negative_count = (dataset_length // 16) * 15
         positive_count = dataset_length - negative_count
     else:
-        negative_count = dataset_length//2
+        negative_count = dataset_length // 2
         positive_count = dataset_length - negative_count
 
     n_amp = 20
@@ -229,10 +304,13 @@ def electrical_SIN_dataset(dataset_length, time_length, conf, data_dir):
         target.append(1)
 
     add_categorical_column(electric_df, dataset_length, "Target", target)
-    np_time += add_timeseries_column(electric_df, dataset_length, time_length, "SIN", params)
+    np_time += add_timeseries_column(
+        electric_df, dataset_length, time_length, "SIN", params
+    )
 
     def my_noise(x):
         return add_noise(time_length, x, white=True, wparams={"std": 2})
+
     start = time.time()
     electric_df["Timeseries"] = electric_df["Timeseries"].apply(func=my_noise)
     pd_time += time.time() - start
@@ -240,18 +318,31 @@ def electrical_SIN_dataset(dataset_length, time_length, conf, data_dir):
     def my_anomalies(x):
         global sp_time  # pylint: disable=W0603
         if x["Target"] == 0:
-            p_small, n_small, spt = add_anomalies(time_length, time_length//200, n_amp)
+            p_small, n_small, spt = add_anomalies(
+                time_length, time_length // 200, n_amp
+            )
             sp_time += spt
         else:
-            p_small, n_small, spt = add_anomalies(time_length, time_length//120, p_amp*3)
+            p_small, n_small, spt = add_anomalies(
+                time_length, time_length // 120, p_amp * 3
+            )
             sp_time += spt
         return x["Timeseries"] + p_small + n_small
+
     electric_df["Timeseries"] = electric_df.apply(my_anomalies, axis=1)
-    
-    filename = data_dir + "/utilities_data_" + data_context + '_' + str(dataset_length) + ".csv"
+
+    filename = (
+        data_dir
+        + "/utilities_data_"
+        + data_context
+        + "_"
+        + str(dataset_length)
+        + ".csv"
+    )
     electric_df.to_csv(filename, index=False)
-    
+
     return sp_time, np_time, pd_time
+
 
 def ecommerce_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
@@ -281,44 +372,65 @@ def ecommerce_dataset(dataset_length, time_length, conf, data_dir):
     start, end = start_range
     if dist == "normal":
         start = time.time()
-        params["starts"] = stats.norm.rvs((start+end)//2, abs(end-start)//6, dataset_length)
+        params["starts"] = stats.norm.rvs(
+            (start + end) // 2, abs(end - start) // 6, dataset_length
+        )
         sp_time += time.time() - start
     else:
-        params["starts"] = [secrets.choice(range(start, end+1)) for i in range(dataset_length)]
+        params["starts"] = [
+            secrets.choice(range(start, end + 1)) for i in range(dataset_length)
+        ]
 
     stores = {}
     letters = string.ascii_uppercase + string.digits
     for i in range(dataset_length):
-        s_id = ''.join(secrets.choice(letters) for i in range(5))
+        s_id = "".join(secrets.choice(letters) for i in range(5))
         while s_id in stores:
-            s_id = ''.join(secrets.choice(letters) for i in range(5))
+            s_id = "".join(secrets.choice(letters) for i in range(5))
         stores[s_id] = 1
     add_categorical_column(ecom_df, dataset_length, "Store_id", stores.keys())
 
     if "Sales" in categories:
-        np_time += add_timeseries_column(ecom_df, dataset_length, time_length, "CAR", params, "Sales_Timeseries")
+        np_time += add_timeseries_column(
+            ecom_df, dataset_length, time_length, "CAR", params, "Sales_Timeseries"
+        )
 
     if "Revenue" in categories:
         for i in range(dataset_length):
             if params["growths"][i] > 0:
                 params["starts"][i] *= params["growths"][i]
 
-        np_time += add_timeseries_column(ecom_df, dataset_length, time_length, "CAR", params, "Revenue_Timeseries")
+        np_time += add_timeseries_column(
+            ecom_df, dataset_length, time_length, "CAR", params, "Revenue_Timeseries"
+        )
 
     if "Subscribers" in categories:
-        params["starts"] = [secrets.choice(range(10, 500)) for i in range(dataset_length)]
-        np_time += add_timeseries_column(ecom_df, dataset_length, time_length, "CAR", params, "Subscribers_Timeseries")
+        params["starts"] = [
+            secrets.choice(range(10, 500)) for i in range(dataset_length)
+        ]
+        np_time += add_timeseries_column(
+            ecom_df,
+            dataset_length,
+            time_length,
+            "CAR",
+            params,
+            "Subscribers_Timeseries",
+        )
 
         def my_season(x):
-            return add_seasonality(x, time_length, 1/365, 10).astype(int)
+            return add_seasonality(x, time_length, 1 / 365, 10).astype(int)
+
         start = time.time()
-        ecom_df["Subscribers_Timeseries"] = ecom_df["Subscribers_Timeseries"].apply(func=my_season)
+        ecom_df["Subscribers_Timeseries"] = ecom_df["Subscribers_Timeseries"].apply(
+            func=my_season
+        )
         pd_time += time.time() - start
 
-    filename = data_dir + "/ecomm_data_" + sector + '_' + str(dataset_length) + ".csv"
+    filename = data_dir + "/ecomm_data_" + sector + "_" + str(dataset_length) + ".csv"
     ecom_df.to_csv(filename, index=False)
 
     return sp_time, np_time, pd_time
+
 
 def env_PSUEDO_dataset(dataset_length, time_length, conf, data_dir):
     sp_time = 0
@@ -335,10 +447,14 @@ def env_PSUEDO_dataset(dataset_length, time_length, conf, data_dir):
     params = {}
     if dist == "normal":
         start = time.time()
-        params["starts"] = stats.norm.rvs((start+end)//2, abs(end-start)//6, dataset_length)
+        params["starts"] = stats.norm.rvs(
+            (start + end) // 2, abs(end - start) // 6, dataset_length
+        )
         sp_time += time.time() - start
     else:
-        params["starts"] = [secrets.choice(range(start, end+1)) for i in range(dataset_length)]
+        params["starts"] = [
+            secrets.choice(range(start, end + 1)) for i in range(dataset_length)
+        ]
 
     if trend == "negative":
         if dataset_length <= 100:
@@ -357,59 +473,81 @@ def env_PSUEDO_dataset(dataset_length, time_length, conf, data_dir):
     params["growths"] = [secrets.choice(growth_options) for i in range(dataset_length)]
 
     def env_pp(x):
-        return np.sin(2*np.pi*x/12 + np.pi/2)
+        return np.sin(2 * np.pi * x / 12 + np.pi / 2)
 
     start = time.time()
     func = np.frompyfunc(env_pp, 1, 1)
     np_time += time.time() - start
     params["ftype"] = func
-    np_time += add_timeseries_column(env_df, dataset_length, time_length, "PSEUDOPERIODIC", params)
+    np_time += add_timeseries_column(
+        env_df, dataset_length, time_length, "PSEUDOPERIODIC", params
+    )
 
     def my_noise(x):
         return add_noise(time_length, x, red=True, wparams={"std": 0.5, "tau": 0.8})
+
     start = time.time()
     env_df["Timeseries"] = env_df["Timeseries"].apply(func=my_noise)
     pd_time += time.time() - start
 
-    filename = data_dir + "/env_data_" + region + '_' + data_context + '_' + str(dataset_length) + ".csv"
+    filename = (
+        data_dir
+        + "/env_data_"
+        + region
+        + "_"
+        + data_context
+        + "_"
+        + str(dataset_length)
+        + ".csv"
+    )
     env_df.to_csv(filename, index=False)
 
     return sp_time, np_time, pd_time
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     warnings.filterwarnings("ignore")
 
-    parser.add_argument('--industry',
-                        type=str,
-                        default="",
-                        help="pick a preset industry for which to generate synthetic data: \
-                        finance, healthcare, utilities, e-commerce, environmental, custom")
-    parser.add_argument('-l',
-                        '--logfile',
-                        type=str,
-                        default="",
-                        help="log file to output benchmarking results to")
-    parser.add_argument('-n',
-                        '--dataset_len',
-                        default=100,
-                        help="number of points in dataset")
-    parser.add_argument('-t',
-                        '--time_duration',
-                        default=1000,
-                        help="integer value for length of unit-less time")
-    parser.add_argument('-c',
-                        '--config_file',
-                        required=True,
-                        type=str,
-                        default="",
-                        help="configuration file path")
-    parser.add_argument('-d',
-                        '--data_dir',
-                        required=True,
-                        type=str,
-                        help="directory to save generated data")
-    
+    parser.add_argument(
+        "--industry",
+        type=str,
+        default="",
+        help="pick a preset industry for which to generate synthetic data: \
+                        finance, healthcare, utilities, e-commerce, environmental, custom",
+    )
+    parser.add_argument(
+        "-l",
+        "--logfile",
+        type=str,
+        default="",
+        help="log file to output benchmarking results to",
+    )
+    parser.add_argument(
+        "-n", "--dataset_len", default=100, help="number of points in dataset"
+    )
+    parser.add_argument(
+        "-t",
+        "--time_duration",
+        default=1000,
+        help="integer value for length of unit-less time",
+    )
+    parser.add_argument(
+        "-c",
+        "--config_file",
+        required=True,
+        type=str,
+        default="",
+        help="configuration file path",
+    )
+    parser.add_argument(
+        "-d",
+        "--data_dir",
+        required=True,
+        type=str,
+        help="directory to save generated data",
+    )
+
     FLAGS = parser.parse_args()
     data_len = int(FLAGS.dataset_len)
     time_len = int(FLAGS.time_duration)
@@ -419,7 +557,8 @@ if __name__ == "__main__":
     pd_time = 0
 
     import modin.config as cfg  # pylint: disable=E0401
-    cfg.Engine.put('ray')
+
+    cfg.Engine.put("ray")
     import modin.pandas as pd  # pylint: disable=E0401
     import ray  # pylint: disable=E0401
 
@@ -428,9 +567,9 @@ if __name__ == "__main__":
     else:
         path = pathlib.Path(FLAGS.logfile)
         path.parent.mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(filename=FLAGS.logfile, level=logging.INFO, filemode='w')
+        logging.basicConfig(filename=FLAGS.logfile, level=logging.INFO, filemode="w")
     logger = logging.getLogger()
-    logging.getLogger('modin').setLevel(logging.WARNING)
+    logging.getLogger("modin").setLevel(logging.WARNING)
 
     ray.init()
     RAY_DISABLE_MEMORY_MONITOR = 1
@@ -440,38 +579,60 @@ if __name__ == "__main__":
             data = json.load(jsonfile)
     else:
         sys.exit("config file path is missing")
-    
+
     if FLAGS.data_dir == "":
         sys.exit("Data dir path is missing")
-    
-    print("Data generation can take a while depending on the size expected and level of customization. Please wait until the data generation is complete...")
+
+    print(
+        "Data generation can take a while depending on the size expected and level of customization. Please wait until the data generation is complete..."
+    )
 
     if industry == "":
-        sys.exit("No specifications provided, please run script with a configuration or preset industry")
-    
+        sys.exit(
+            "No specifications provided, please run script with a configuration or preset industry"
+        )
+
     elif industry == "custom":
         sp_time, np_time = custom_dataset(data["Custom"], data_len, FLAGS.data_dir)
 
     elif industry == "finance":
-        sp_time, np_time, pd_time = fin_CAR_dataset(data_len, time_len, data["Finance"], FLAGS.data_dir)
+        sp_time, np_time, pd_time = fin_CAR_dataset(
+            data_len, time_len, data["Finance"], FLAGS.data_dir
+        )
 
     elif industry == "healthcare":
-        sp_time, np_time, pd_time = health_MG_dataset(data_len, time_len, data["Healthcare"], FLAGS.data_dir)
+        sp_time, np_time, pd_time = health_MG_dataset(
+            data_len, time_len, data["Healthcare"], FLAGS.data_dir
+        )
 
     elif industry == "utilities":
-        sp_time, np_time, pd_time = electrical_SIN_dataset(data_len, time_len, data["Utilities"], FLAGS.data_dir)
+        sp_time, np_time, pd_time = electrical_SIN_dataset(
+            data_len, time_len, data["Utilities"], FLAGS.data_dir
+        )
 
     elif industry == "ecommerce" or industry == "e-commerce":  # pylint: disable=R1714
-        sp_time, np_time, pd_time = ecommerce_dataset(data_len, time_len, data["E-commerce"], FLAGS.data_dir)
+        sp_time, np_time, pd_time = ecommerce_dataset(
+            data_len, time_len, data["E-commerce"], FLAGS.data_dir
+        )
 
     elif industry == "environmental":
-        sp_time, np_time, pd_time = env_PSUEDO_dataset(data_len, time_len, data["Environmental"], FLAGS.data_dir)
+        sp_time, np_time, pd_time = env_PSUEDO_dataset(
+            data_len, time_len, data["Environmental"], FLAGS.data_dir
+        )
     else:
-        sys.exit("Industry not found in implementation, please check --industry parameter")
-    
+        sys.exit(
+            "Industry not found in implementation, please check --industry parameter"
+        )
+
     if sp_time > 0:
-        logger.info("Scipy time to generate data for %s industry: %f secs", industry, sp_time)
+        logger.info(
+            "Scipy time to generate data for %s industry: %f secs", industry, sp_time
+        )
     if np_time > 0:
-        logger.info("Numpy time to generate data for %s industry: %f secs", industry, np_time)
+        logger.info(
+            "Numpy time to generate data for %s industry: %f secs", industry, np_time
+        )
     if pd_time > 0:
-        logger.info("Modin time to generate data for %s industry: %f secs", industry, pd_time)
+        logger.info(
+            "Modin time to generate data for %s industry: %f secs", industry, pd_time
+        )
